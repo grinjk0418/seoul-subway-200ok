@@ -1,0 +1,68 @@
+.subway-station-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+.subway-station-list__title {
+  width: 100%;
+  height: 73px;
+  background-color: #54DCC1;
+  display: flex;
+  justify-content: center;
+  align-items: center;   
+}
+
+.subway-station-list__title > h1{
+  font-size: 25px;
+  font-weight: 600;
+  color: white;
+}
+
+.subway-station-list__searchbar {
+  width: 80%;
+  height: 60px;
+  border-radius: 30px;
+  background-color: white;
+  margin: 40px auto;
+}
+
+.subway-station-list__searchbar > input{
+  width: 100%;
+  height: 100%;
+  border-radius: 30px;
+  padding-left: 40px;
+  font-size: 20px;
+}
+
+.subway-station-list__item {
+  width: 100%;
+  height: 80px;
+  border: 1px solid rgba(255, 255, 255,0.2);
+  font-size: 20px;
+  color: white;
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  padding-left: 20%;
+  cursor: pointer;
+}
+
+.subway-station-list__item:hover{
+  transform: translateY(-10px);
+}
+
+.subway-station-list__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 32px;
+  background-color: #54DCC1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin : 0 20px;
+}
+
+.subway-station-list__icon > img {
+  width:20px;
+}
