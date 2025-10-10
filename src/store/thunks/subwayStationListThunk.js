@@ -7,9 +7,7 @@ export const subwayStationIndex = createAsyncThunk(
     const base = "http://openapi.seoul.go.kr:8088/5a766a6b4f64646f3130364978634561/json/SearchSTNBySubwayLineInfo";
     const tasks = [];
     for (let i = 1; i <= 9; i++) {
-      const line = `${String(i).padStart(2, "0")}호선`;
-      // 한글 파라미터는 주소에서 깨지니 여기서는 한 번 감싸줌
-      const url = `${base}/1/999///${encodeURIComponent(line)}`;
+      const url = `${base}/1/999/%20/%20/${i}`;
       tasks.push(axios.get(url));
     }
     const results = await Promise.all(tasks);
@@ -26,7 +24,7 @@ export const subwayStationIndex = createAsyncThunk(
 // const subwayStationIndex = createAsyncThunk(
 //   'subwayStationListSlice/subwayStationIndex',
 //   async () => {
-//     const url = `http://openapi.seoul.go.kr:8088/5a766a6b4f64646f3130364978634561/json/SearchSTNBySubwayLineInfo/1/799/%20/%20/09`
+//     const url = `http://openapi.seoul.go.kr:8088/5a766a6b4f64646f3130364978634561/json/SearchSTNBySubwayLineInfo/1/799/%20/%20/9`
 //     const response = await axios.get(url);
 
 //     return response.data.SearchSTNBySubwayLineInfo.row;

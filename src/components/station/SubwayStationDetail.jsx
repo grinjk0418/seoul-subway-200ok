@@ -3,19 +3,31 @@ import './SubwayStationDetail.css';
 import { useDispatch, useSelector } from 'react-redux';
 import { useEffect } from 'react';
 import { setSubwayInfo } from '../../store/slices/subwayStationDetailSlice';
+import { subwayStationIndex } from '../../store/thunks/SubwayStationListThunk';
 
 function SubwayStationDetail() {
 
-  const params = useParams();
+  const { stationId } = useParams();
   const dispatch = useDispatch();
   const subwayList = useSelector(state => state.subwayStation.subwayList);
   const subwayInfo = useSelector(state => state.subwayStationDetail.subwayInfo);
 
-  useEffect(() => {
-    const item = subwayList.find((item) => params.stationId === item.STATION_CD);
-    dispatch(setSubwayInfo(item));
-  }, []);
 
+// 1) 리스트가 비어 있으면 로드
+  useEffect(() => {
+    if (!subwayList?.length) {
+      dispatch(subwayStationIndex());
+    }
+  }, [subwayList?.length, dispatch]);
+
+  // 2) 리스트(혹은 stationId)가 준비되면 해당 역 찾기
+  useEffect(() => {
+    if (!subwayList?.length || !stationId) return;
+    const item = subwayList.find(v => v.STATION_CD === stationId);
+    dispatch(setSubwayInfo(item ?? {})); // 못 찾으면 안전하게 빈 객체
+  }, [stationId, subwayList, dispatch]);
+
+  
   return (
     <>
       { subwayInfo.STATION_NM &&
