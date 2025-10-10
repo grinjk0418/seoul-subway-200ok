@@ -12,7 +12,7 @@ function SubwayStationList() {
 
   useEffect(() => {
     dispatch(subwayStationIndex());
-  }, []);
+  }, [dispatch]);
 
   return (
     <>

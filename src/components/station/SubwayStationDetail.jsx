@@ -23,11 +23,10 @@ function SubwayStationDetail() {
   // 2) 리스트(혹은 stationId)가 준비되면 해당 역 찾기
   useEffect(() => {
     if (!subwayList?.length || !stationId) return;
-    const item = subwayList.find(v => v.STATION_CD === stationId);
-    dispatch(setSubwayInfo(item ?? {})); // 못 찾으면 안전하게 빈 객체
+    const item = subwayList.find(item => item.STATION_CD === stationId);
+    dispatch(setSubwayInfo(item ?? {})); // 못 찾으면 안전하게 빈 객체, (?? 는 널 병합 연산자,왼쪽값이 null이나 undefined면 오른쪽값을 쓰겠다)
   }, [stationId, subwayList, dispatch]);
 
-  
   return (
     <>
       { subwayInfo.STATION_NM &&
