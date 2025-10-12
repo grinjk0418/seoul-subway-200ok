@@ -36,3 +36,9 @@ async function test(reader) {
 
   return result;
 }
+
+//엑셀파일을 메모장(확장자: .txt , 인코딩: UTF-8)으로 변경 (한글 제목X)
+
+//터미널에서 칠 실행코드 : node parser/t.js 
+//치면 제이슨 파일 생김
+//제이슨 파일을 '컨트롤+쉬프트+L' 단축키로 프로퍼티의 "" 제거해서 객체 형태로 다시 변경

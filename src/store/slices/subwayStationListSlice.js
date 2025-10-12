@@ -1,5 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { subwayStationIndex } from "../thunks/SubwayStationListThunk";
+import { subwayStationIndex } from "../thunks/subwayStationListThunk";
 
 const subwayStationListSlice = createSlice({
   name: 'subwayStationListSlice',

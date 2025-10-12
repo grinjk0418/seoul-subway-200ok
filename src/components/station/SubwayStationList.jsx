@@ -1,8 +1,8 @@
 import { useDispatch, useSelector } from 'react-redux';
 import './SubwayStationList.css';
 import { useEffect } from 'react';
-import { subwayStationIndex } from '../../store/thunks/SubwayStationListThunk';
 import { useNavigate } from 'react-router-dom';
+import { subwayStationIndex } from '../../store/thunks/subwayStationListThunk';
 
 function SubwayStationList() {
   const dispatch = useDispatch();
