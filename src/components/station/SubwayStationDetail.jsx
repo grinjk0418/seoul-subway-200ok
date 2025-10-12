@@ -10,16 +10,22 @@ import { realtimeArrivalsIndex } from '../../store/thunks/subwayStationDetailThu
 /* ----------------------- 작은 함수 2개 (컴포넌트 바깥) ----------------------- */
 // LINE_NUM("01호선","9호선" 등) → subwayId(1001~1009)로 변환
 function toSubwayId(lineNum) {
-  if (!lineNum) return null;
+  if (!lineNum) {
+    return null;
+  }
   const n = parseInt(String(lineNum).replace(/\D/g, ''), 10); // 숫자만 뽑기
-  if (!Number.isFinite(n) || n < 1 || n > 9) return null;     // 1~9호선만
+  if (!Number.isFinite(n) || n < 1 || n > 9) {
+    return null;     // 1~9호선만
+  }
   return 1000 + n;                                            // 1001~1009
 }
 
 // 남은 시간(barvlDt: 초) → "X분 Y초 후"
 function formatEta(barvlDt) {
   const sec = Number(barvlDt);
-  if (!Number.isFinite(sec)) return '예상 없음';
+  if (!Number.isFinite(sec)) {
+    return '예상 없음';
+  }
   const m = Math.floor(sec / 60);
   const s = sec % 60;
   return `${m}분 ${s}초 후`;
@@ -33,7 +39,7 @@ function SubwayStationDetail() {
   // 전역 상태
   const subwayList = useSelector(state => state.subwayStation.subwayList);
   const subwayInfo = useSelector(state => state.subwayStationDetail.subwayInfo);
-  const arrivals  = useSelector(state => state.subwayStationDetail.realtimeArrivalList);
+  const arrivalList  = useSelector(state => state.subwayStationDetail.realtimeArrivalList);
 
   // 1) 역 리스트 없으면 불러오기
   useEffect(() => {
@@ -62,9 +68,9 @@ function SubwayStationDetail() {
 
   // 이 역의 "해당 호선" 도착 정보만 남기기
   const arrivalsForLine = useMemo(() => {
-    if (!subwayId || !Array.isArray(arrivals)) return [];
-    return arrivals.filter(a => Number(a.subwayId) === subwayId);
-  }, [arrivals, subwayId]);
+    if (!subwayId || !Array.isArray(arrivalList)) return [];
+    return arrivalList.filter(a => Number(a.subwayId) === subwayId);
+  }, [arrivalList, subwayId]);
 
   // 상행/하행 분리
   const upArrivals = useMemo(
