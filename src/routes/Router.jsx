@@ -4,6 +4,7 @@ import App from "../App.jsx";
 import SubwayLinePath from "../components/SubwayLinePath.jsx";
 import SubwayStationList from "../components/station/SubwayStationList.jsx";
 import SubwayStationDetail from "../components/station/SubwayStationDetail.jsx";
+import NotFound from "../components/errors/NotFound.jsx";
 
 const router = createBrowserRouter([
   {
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
         path: 'stations/:stationId',
         element: <SubwayStationDetail />
       },
+      {
+        path: '*',
+        element: <NotFound />
+      }
     ]
   }
 ]);
