@@ -50,7 +50,9 @@ function SubwayStationDetail() {
 
   // 2) 리스트와 stationId가 준비되면 현재 역 정보 설정
   useEffect(() => {
-    if (!subwayList?.length || !stationId) return;
+    if (!subwayList?.length || !stationId) {
+      return;
+    }
     const item = subwayList.find(it => it.STATION_CD === stationId);
     dispatch(setSubwayInfo(item ?? {})); // 못 찾으면 안전하게 빈 객체
   }, [stationId, subwayList, dispatch]);
@@ -64,7 +66,12 @@ function SubwayStationDetail() {
 
   /* ----------------------- 도착 데이터 가공 (아주 간단) ----------------------- */
   // 현재 역 호선 → subwayId(1001~1009)
-  const subwayId = useMemo(() => toSubwayId(subwayInfo?.LINE_NUM), [subwayInfo?.LINE_NUM]);
+  const subwayId = useMemo(
+    () => toSubwayId(subwayInfo?.LINE_NUM),
+    [subwayInfo?.LINE_NUM]
+  );
+  
+  //  const subwayId = toSubwayId(subwayInfo?.LINE_NUM);
 
   // 이 역의 "해당 호선" 도착 정보만 남기기
   const arrivalsForLine = useMemo(() => {
