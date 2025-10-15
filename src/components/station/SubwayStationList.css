@@ -2,18 +2,22 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 30px;
+  align-items: center;
+  max-width: 1500px;     /* 필요하면 1280/1024로 조정 */
+  margin: 0 auto;        /* 컨테이너를 화면 가운데로 */
+  padding: 0 24px;       /* 좌우 여백 */
 }
 
 .subway-station-list__title {
   width: 100%;
-  height: 73px;
+  height:73px;
   background-color: #54DCC1;
   display: flex;
   justify-content: center;
-  align-items: center;   
+  align-items: center;
 }
 
-.subway-station-list__title > h1{
+.subway-station-list__title > h1 {
   font-size: 25px;
   font-weight: 600;
   color: white;
@@ -28,28 +32,34 @@
 }
 
 .subway-station-list__searchbar > input{
-  width: 100%;
-  height: 100%;
+  width:100%;
+  height:100%;
   border-radius: 30px;
   padding-left: 40px;
   font-size: 20px;
 }
 
 .subway-station-list__item {
-  width: 100%;
+  width:100%;
   height: 80px;
-  border: 1px solid rgba(255, 255, 255,0.2);
+  border:1px solid rgba(255, 255, 255, 0.2);
   font-size: 20px;
-  color: white;
+  color:#fff;
   display: flex;
-  justify-content: left;
+
+  /* ⬇ 아이콘 32px + 텍스트 1fr 그리드로 정렬(항상 같은 시작선) */
+  display: grid;
+  grid-template-columns: 32px 1fr;
   align-items: center;
-  padding-left: 20%;
   cursor: pointer;
+  column-gap: 12px;             /* 아이콘-텍스트 간격 */
+  padding: 0 16px;           /* 내부 여백 */
 }
 
 .subway-station-list__item:hover{
-  transform: translateY(-10px);
+  transform: translateY(-6px);
+  border-color: rgba(84, 220, 193, 0.5);
+  background: rgba(84, 220, 193, 0.06);
 }
 
 .subway-station-list__icon {
@@ -60,9 +70,10 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin : 0 20px;
 }
 
 .subway-station-list__icon > img {
-  width:20px;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }

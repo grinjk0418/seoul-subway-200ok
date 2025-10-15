@@ -1,7 +1,13 @@
-export default function Footer() {
-  return (
-    <footer className="footer">
-      © 2025 JK Subway
-    </footer>
-  );
-}
+import './Footer.css';
+
+  function Footer(){
+    return(
+      <>
+        <div className='footerbox'>
+          <p>© 2025 200 OK. All rights reserved.</p>
+        </div>
+      </>
+    )
+  }
+
+ export default Footer;
