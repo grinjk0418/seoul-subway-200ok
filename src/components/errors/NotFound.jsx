@@ -1,7 +1,16 @@
+import './NotFound.css'
+
 function NotFound() {
-  return (
+  return(
     <>
-      <h1>에러 페이지 만들어...</h1>
+      <div className="notfound-imgbox">
+        <img src="/notfound.png" alt="낫파운드 이미지" />
+      </div>
+      <div className="notfound-line">
+
+      </div>
+      <p className="notfound-text">페이지를 찾을 수 없습니다</p>
+      
     </>
   )
 }

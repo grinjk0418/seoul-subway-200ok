@@ -1,10 +1,10 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Main from "../components/Main.jsx";
 import App from "../App.jsx";
-import SubwayLinePath from "../components/SubwayLinePath.jsx";
 import SubwayStationList from "../components/station/SubwayStationList.jsx";
 import SubwayStationDetail from "../components/station/SubwayStationDetail.jsx";
 import NotFound from "../components/errors/NotFound.jsx";
+import SubwayLineList from "../components/lineInfo/SubwayLineList.jsx";
 
 const router = createBrowserRouter([
   {
@@ -16,7 +16,7 @@ const router = createBrowserRouter([
       },
       {
         path: 'line-diagrams',
-        element: <SubwayLinePath />
+        element: <SubwayLineList />
       },
       {
         path: 'stations',
