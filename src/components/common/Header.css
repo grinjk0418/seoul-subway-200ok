@@ -8,6 +8,7 @@
   display: flex;
   justify-content: space-between;
   background-color: #2C313B;
+  z-index: 2;
 }
 
 .header-back {

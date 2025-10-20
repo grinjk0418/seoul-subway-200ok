@@ -1,3 +1,4 @@
+//subwayStationDetailSlice.js 파일
 import { createSlice } from "@reduxjs/toolkit";
 import { realtimeArrivalsIndex } from "../thunks/subwayStationDetailThunk";
 
