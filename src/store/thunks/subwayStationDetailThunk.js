@@ -1,33 +1,32 @@
 //subwayStationDetailThunk.js 파일
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-import { thunk } from "redux-thunk";
 
 const realtimeArrivalsIndex = createAsyncThunk(
   'subwayStationDetailSlice/realtimeArrivalsIndex',
   async (statnNm) => {
-      const url = `http://swopenapi.seoul.go.kr/api/subway/${import.meta.env.VITE_SEOUL_OPEN_API_KEY}/json/realtimeStationArrival/0/999/${statnNm}`
+      const url = `http://swopenapi.seoul.go.kr/api/subway/${import.meta.env.VITE_SEOUL_OPEN_API_KEY}/json/realtimeStationArrival/0/999/${statnNm}`;
 
       const { data } = await axios.get(url);
       
-      return data?.realtimeArrivalList;
+      return data.realtimeArrivalList;
   }
 );
 
-// const firstLastTimesIndex = createAsyncThunk(
-//   'subwayStationDetailSlice/firstLastTimesIndex'
-//   async (arg, thunkAPI) => {
-//     const state = thunkAPI.getState();
+const firstLastTimesIndex = createAsyncThunk(
+  'subwayStationDetailSlice/firstLastTimesIndex',
+  async (arg, thunkAPI) => {
+  const state = thunkAPI.getState();
 
-//     const lineNum = 
-//     const updnLine = 
-//     const day = 
-//     const stationCd = 
+  const line =  state.subwayStationDetail.subwayInfo.LINE_NUM;
+  const stCd = state.subwayStationDetail.subwayInfo?.STATION_CD;
 
-//     const url = `http://openapi.seoul.go.kr:8088/${import.meta.env.VITE_SEOUL_OPEN_API_KEY}/json/SearchFirstAndLastTrainbyLineServiceNew/1/1/${'4호선'}/${'상/하행'}/${'요일'}/${'전철역코드'}`
+  const url = `http://openapi.seoul.go.kr:8088/${import.meta.env.VITE_SEOUL_OPEN_API_KEY}/json/SearchFirstAndLastTrainbyLineServiceNew/1/1/${line}/${'상/하행'}/${'요일'}/${stCd}`;
 
-//     return
-//   }
-// );
+  const { data } = await axios.get(url);
+      
+    return data.SearchFirstAndLastTrainbyLineServiceNew.row;
+  }
+);
 
-export { realtimeArrivalsIndex }
+export { realtimeArrivalsIndex, firstLastTimesIndex }

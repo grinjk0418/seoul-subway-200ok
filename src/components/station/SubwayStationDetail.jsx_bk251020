@@ -1,0 +1,288 @@
+// src/pages/SubwayStationDetail.jsx
+import { useParams } from 'react-router-dom';
+import './SubwayStationDetail.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { useEffect, useRef, useState } from 'react';
+import { setSubwayInfo } from '../../store/slices/subwayStationDetailSlice.js';
+import { subwayStationIndex } from '../../store/thunks/subwayStationListThunk.js';
+import { realtimeArrivalsIndex, firstLastTimesIndex } from '../../store/thunks/subwayStationDetailThunk.js';
+
+// 역ID → 역명 사전 [{ statnId, statnNm }]
+import stationCatalog from '../../data/stationNameDict.js';
+
+/* ====================== 헬퍼 ====================== */
+const nameById = (id) =>
+  stationCatalog.find(x => String(x.statnId) === String(id))?.statnNm || '';
+
+const toDest = (s) => {
+  const m = (s || '').match(/^(.+?)행/);
+  return m ? `${m[1]}행` : '-행';
+};
+
+const cleanMsg = (m) => (m || '').replace(/^\s*\[\d+\]\s*번째\s*/,'').trim();
+
+const cdLabel = (cd) => ({
+  '0':'진입','1':'도착','2':'출발','3':'전역출발','4':'전역진입','5':'전역도착','99':'운행중'
+}[String(cd)] || '');
+
+const matchesDir = (value, want) => {
+  const v = String(value || '');
+  const upAliases   = ['상행', '내선', '내선순환', '상선'];
+  const downAliases = ['하행', '외선', '외선순환', '하선'];
+  if (want === '상행') return upAliases.some(k => v.includes(k));
+  if (want === '하행') return downAliases.some(k => v.includes(k));
+  return v.includes(want);
+};
+
+const loopLabel = (v='') => {
+  if (v.includes('내선')) return '내선';
+  if (v.includes('외선')) return '외선';
+  if (v.includes('상행') || v.includes('상선')) return '상행';
+  if (v.includes('하행') || v.includes('하선')) return '하행';
+  return '';
+};
+
+const pickTop2 = (list, wantDir) => {
+  const arr = (list || []).filter(a => matchesDir(a?.updnLine, wantDir));
+  const withNum = arr.map(a => ({ a, n: Number(a?.barvlDt) }));
+  const num = withNum.filter(x => Number.isFinite(x.n)).sort((x,y)=>x.n-y.n).map(x=>x.a);
+  const non = withNum.filter(x => !Number.isFinite(x.n)).map(x=>x.a);
+  return [...num, ...non].slice(0,2);
+};
+
+const eta = (sec) => {
+  if (sec == null) return null;
+  const s = Math.max(0, Math.round(sec));
+  if (s <= 0) return '도착';
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m ? `${m}분 ` : ''}${r}초 후`;
+};
+
+/* ========= 새로고침/재조회시 시간 '원복' 방지 ========= */
+const trainIdOf = (a) => a ? (a.btrainNo || `${a.trainLineNm||''}/${a.subwayId||''}/${a.updnLine||''}`) : '';
+const deadlineKey = (id) => `subway:deadline:${id}`;
+const getSavedDeadline = (id) => {
+  if (!id) return null;
+  try { const v = sessionStorage.getItem(deadlineKey(id)); const n = v ? Number(v) : NaN; return Number.isNaN(n) ? null : n; }
+  catch { return null; }
+};
+const setSavedDeadline = (id, ts) => { if (id && Number.isFinite(ts)) { try { sessionStorage.setItem(deadlineKey(id), String(ts)); } catch {} } };
+const computeApiDeadline = (barvlDtSec) => {
+  const n = Number(barvlDtSec);
+  if (!Number.isFinite(n)) return null;
+  return Date.now() + n * 1000;
+};
+const secsFromDeadline = (deadlineMs) => {
+  if (!Number.isFinite(deadlineMs)) return null;
+  const diff = Math.floor((deadlineMs - Date.now()) / 1000);
+  return diff > 0 ? diff : 0;
+};
+
+/* ====== 도착 텍스트 규칙 ====== */
+const lineText = (a, sec) => {
+  if (!a) return '도착 정보 없음';
+  const code = String(a.arvlCd);
+  const hasTime = sec != null && !Number.isNaN(sec);
+  if (code === '99') return hasTime ? eta(sec) : '운행중';
+  if (new Set(['0','1','2','3','4','5']).has(code)) return cdLabel(code) || '도착 정보 없음';
+  if (hasTime) return eta(sec);
+  return cleanMsg(a?.arvlMsg2) || cdLabel(code) || '도착 정보 없음';
+};
+
+/* ====== 첫차/막차 유틸 ====== */
+// 요일 → 코드(평일=1, 토요일=2, 일/공휴=3)
+const getDowCode = (d = new Date()) => {
+  const w = d.getDay(); // 0=일
+  if (w === 0) return 3;
+  if (w === 6) return 2;
+  return 1;
+};
+
+// "04" | "4" | "4호선" → "4호선" (1~9호선만 변환)
+const toLineName = (lineNum) => {
+  const raw = String(lineNum ?? '').trim();
+  if (!raw) return '';
+  if (raw.includes('호선')) return raw;
+  const n = raw.replace(/^0+/, '');
+  if (/^[1-9]$/.test(n)) return `${n}호선`;
+  return raw; // 수인분당선 등은 API 대상 아님
+};
+
+// 실시간에 내/외선 정보가 있으면 그것을 우선, 없으면 상/하행 기준으로 1/2
+const toDirCode = (arrivalList, want /* '상행'|'하행' */) => {
+  const sample = (arrivalList || []).find(a => matchesDir(a?.updnLine, want));
+  const lab = loopLabel(sample?.updnLine || '');
+  if (lab === '내선') return 1;
+  if (lab === '외선') return 2;
+  return want === '상행' ? 1 : 2;
+};
+
+// HHMM → "HH:MM"
+const hhmm = (s) => {
+  if (!s || s.length < 3) return null;
+  const str = String(s).padStart(4, '0');
+  return `${str.slice(0,2)}:${str.slice(2,4)}`;
+};
+
+/* ====================== 컴포넌트 ====================== */
+function SubwayStationDetail() {
+  const { stationId } = useParams();
+  const dispatch = useDispatch();
+
+  const subwayList  = useSelector(s => s.subwayStation.subwayList);
+  const subwayInfo  = useSelector(s => s.subwayStationDetail.subwayInfo);
+  const arrivalList = useSelector(s => s.subwayStationDetail.realtimeArrivalList);
+  const firstLast   = useSelector(s => s.subwayStationDetail.firstLast); // {up:{first,last}, down:{first,last}}
+
+  // 역목록 → 현재역 세팅 + 실시간
+  useEffect(() => {
+    if (!subwayList?.length) { dispatch(subwayStationIndex()); return; }
+    const item = subwayList.find(it => String(it.STATION_CD) === String(stationId));
+    dispatch(setSubwayInfo(item || {}));
+    if (item?.STATION_NM) dispatch(realtimeArrivalsIndex(item.STATION_NM));
+  }, [dispatch, stationId, subwayList]);
+
+  // 20초마다 실시간 재조회
+  useEffect(() => {
+    if (!subwayInfo?.STATION_NM) return;
+    const t = setInterval(() => dispatch(realtimeArrivalsIndex(subwayInfo.STATION_NM)), 20000);
+    return () => clearInterval(t);
+  }, [dispatch, subwayInfo?.STATION_NM]);
+
+  // 목록 → 표시용 열차 2대씩
+  const [up1, up2]       = pickTop2(arrivalList, '상행');
+  const [down1, down2]   = pickTop2(arrivalList, '하행');
+
+  const upDirName   = up1   ? (nameById(up1.statnTid)   || nameById(up1.statnFid))   : '';
+  const downDirName = down1 ? (nameById(down1.statnTid) || nameById(down1.statnFid)) : '';
+
+  // 카운트다운(원복 방지용 deadline)
+  const deadlinesRef = useRef({ up1: null, up2: null, down1: null, down2: null });
+  const [upSecs, setUpSecs] = useState([null, null]);
+  const [downSecs, setDownSecs] = useState([null, null]);
+
+  useEffect(() => {
+    const now = Date.now();
+    const setFor = (slot, a) => {
+      if (!a) { deadlinesRef.current[slot] = null; return; }
+      const id = trainIdOf(a);
+      const apiDeadline = computeApiDeadline(a.barvlDt);
+      const saved = getSavedDeadline(id);
+      const chosen = (saved && saved > now) ? (apiDeadline ? Math.min(saved, apiDeadline) : saved) : (apiDeadline || null);
+      deadlinesRef.current[slot] = chosen || null;
+      if (chosen) setSavedDeadline(id, chosen);
+    };
+    setFor('up1', up1); setFor('up2', up2);
+    setFor('down1', down1); setFor('down2', down2);
+
+    setUpSecs([secsFromDeadline(deadlinesRef.current.up1), secsFromDeadline(deadlinesRef.current.up2)]);
+    setDownSecs([secsFromDeadline(deadlinesRef.current.down1), secsFromDeadline(deadlinesRef.current.down2)]);
+  }, [arrivalList, up1?.barvlDt, up2?.barvlDt, down1?.barvlDt, down2?.barvlDt]);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setUpSecs([secsFromDeadline(deadlinesRef.current.up1), secsFromDeadline(deadlinesRef.current.up2)]);
+      setDownSecs([secsFromDeadline(deadlinesRef.current.down1), secsFromDeadline(deadlinesRef.current.down2)]);
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // ✅ 첫차/막차 호출: SUBW_CD만 사용 (OTSD_CD 미사용)
+  useEffect(() => {
+    const lineName = toLineName(subwayInfo?.LINE_NUM);         // "n호선"
+    const stationCd = subwayInfo?.STATION_CD ? String(subwayInfo.STATION_CD) : ''; // SUBW_CD
+    if (!lineName || !stationCd) return;
+
+    // 대상: 1~9호선만
+    if (!/^([1-9])호선$/.test(String(lineName))) return;
+
+    const dowCode = getDowCode();
+    const upCode   = toDirCode(arrivalList, '상행'); // 1
+    const downCode = toDirCode(arrivalList, '하행'); // 2
+
+    dispatch(firstLastTimesIndex({
+      lineNum: lineName,    // SBWY_ROUT_LN
+      dirCode: upCode,      // UPLN_DNLN (1/2)
+      dowCode,              // DOW (1/2/3)
+      stationCd,            // SUBW_CD
+      dir: 'up'
+    }));
+    dispatch(firstLastTimesIndex({
+      lineNum: lineName,
+      dirCode: downCode,
+      dowCode,
+      stationCd,
+      dir: 'down'
+    }));
+  }, [dispatch, subwayInfo?.LINE_NUM, subwayInfo?.STATION_CD, arrivalList]);
+
+  const DirChip = ({ dirName, align }) => (
+    <div className={`chip-row ${align==='right' ? 'chip-row-right' : 'chip-row-left'}`}>
+      <div className="chip">
+        <span className="chip-text">
+          {dirName ? `${dirName} 방면` : '방면 정보 없음'}
+        </span>
+      </div>
+    </div>
+  );
+
+  const TrainRow = ({ a, sec }) => (
+    <div className="detail-row">
+      <h4>
+        {toDest(a?.trainLineNm)}
+        {a?.updnLine ? (
+          <span style={{ opacity: 0.65, marginLeft: 6, fontSize: '.9em' }}>
+            · {loopLabel(a.updnLine)}
+          </span>
+        ) : null}
+      </h4>
+      <p><span className="detail-eta">{lineText(a, sec)}</span></p>
+    </div>
+  );
+
+  return (
+    <div className="subway-station-detail-scope">
+      <div className="detail-stage">
+        <div className="detail-root">
+          <div className="detail-switch">
+            <div className="detail-switch-center">
+              {subwayInfo?.LINE_NUM && (
+                <span className="detail-switch-linebadge">
+                  {String(subwayInfo.LINE_NUM).replace(/^0+/, '')}
+                </span>
+              )}
+              <span className="detail-switch-current">
+                {subwayInfo?.STATION_NM || '역 이름 불러오는 중…'}
+              </span>
+            </div>
+          </div>
+
+          <div className="detail-two-col">
+            <section className="detail-section">
+              <DirChip dirName={upDirName} />
+              <div className="detail-card">
+                <TrainRow a={up1}   sec={upSecs[0]} />
+                {up2 && <TrainRow a={up2} sec={upSecs[1]} />}
+                <div className="detail-row"><h4>첫차</h4><p>{hhmm(firstLast.up.first) || '-'}</p></div>
+                <div className="detail-row"><h4>막차</h4><p>{hhmm(firstLast.up.last)  || '-'}</p></div>
+              </div>
+            </section>
+
+            <section className="detail-section">
+              <DirChip dirName={downDirName} align="right" />
+              <div className="detail-card">
+                <TrainRow a={down1}   sec={downSecs[0]} />
+                {down2 && <TrainRow a={down2} sec={downSecs[1]} />}
+                <div className="detail-row"><h4>첫차</h4><p>{hhmm(firstLast.down.first) || '-'}</p></div>
+                <div className="detail-row"><h4>막차</h4><p>{hhmm(firstLast.down.last)  || '-'}</p></div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default SubwayStationDetail;
