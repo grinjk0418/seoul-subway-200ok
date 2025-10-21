@@ -1,4 +1,4 @@
-//subwayStationDetailThunk.js 파일
+// src/store/thunks/subwayStationDetailThunk.js
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 

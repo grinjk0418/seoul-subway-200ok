@@ -1,4 +1,4 @@
-// src/pages/SubwayStationDetail.jsx
+// src/components/station/SubwayStationDetail.jsx
 import { useParams } from 'react-router-dom';
 import './SubwayStationDetail.css';
 import { useDispatch, useSelector } from 'react-redux';
@@ -61,7 +61,7 @@ function SubwayStationDetail() {
         continue;
       }
 
-      if(item.updnLine === '상행' || item.updnLine === '외선') {
+      if(item.updnLine === '상행' || item.updnLine === '내선') {
         tmpUpArrivalInfo.push(item);
 
         if(!tmpUpTrainLineName) {
@@ -177,9 +177,9 @@ function SubwayStationDetail() {
                 {
                   upArrivalInfo.length > 0 && upArrivalInfo.map(item => {
                     return (
-                      <>
-                        <div key={`${item.statnId}${item.barvlDt}`}>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
-                      </>
+                      <div key={item.ordkey}>
+                        <div>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
+                      </div>
                     )
                   })
                 }
@@ -194,9 +194,9 @@ function SubwayStationDetail() {
                 {
                   downArrivalInfo.length > 0 && downArrivalInfo.map(item => {
                     return (
-                      <>
-                        <div key={`${item.statnId}${item.barvlDt}`}>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
-                      </>
+                      <div key={item.ordkey}>
+                        <div>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
+                      </div>
                     )
                   })
                 }
