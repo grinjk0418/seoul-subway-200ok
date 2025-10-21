@@ -35,7 +35,7 @@ let filteredList = [];
         {
           filteredList.map((item) => {
             return(
-              <div className="subway-station-list__item" key={item.STATION_CD} onClick={() => { navigate(`/stations/${item.STATION_CD}`) }}>
+              <div className="subway-station-list__item" key={item.STATION_CD} onClick={() => { navigate(`/stations/${item.STATION_CD}/${item.LINE_NUM}/${item.STATION_NM}`) }}>
                 <div className="subway-station-list__icon">
                   <img src="/mainnavsubway.png" alt="지하철 사진" />
                 </div>

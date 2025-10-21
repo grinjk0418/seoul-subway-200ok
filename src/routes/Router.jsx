@@ -23,7 +23,7 @@ const router = createBrowserRouter([
         element: <SubwayStationList />
       },
       {
-        path: 'stations/:stationId',
+        path: 'stations/:stationId/:stationLine/:stationNm',
         element: <SubwayStationDetail />
       },
       {

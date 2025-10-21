@@ -2,25 +2,9 @@
 import { useParams } from 'react-router-dom';
 import './SubwayStationDetail.css';
 import { useDispatch, useSelector } from 'react-redux';
-import { useEffect } from 'react';
-import { setSubwayInfo } from '../../store/slices/subwayStationDetailSlice.js';
-import { subwayStationIndex } from '../../store/thunks/subwayStationListThunk.js';
-import { realtimeArrivalsIndex, firstLastTimesIndex } from '../../store/thunks/subwayStationDetailThunk.js';
-
-// 역ID → 역명 사전 [{ statnId, statnNm }]
-import stationCatalog from '../../data/stationNameDict.js';
-
-// 상행,내선:1, 하행,외선:2 로 바꾸기
-function updnFrom(txt) {
-  const s = String(txt);
-  if (s.includes('상') || s.includes('내')) {
-    return 1; // 상행/내선
-  } else if (s.includes('하') || s.includes('외')) {
-    return 2; // 하행/외선
-  } else {
-    return undefined;
-  }
-}
+import { useEffect, useState } from 'react';
+import { realtimeArrivalsIndex, upFirstLastTimesIndex, downFirstLastTimesIndex } from '../../store/thunks/subwayStationDetailThunk.js';
+import { clearState } from '../../store/slices/subwayStationDetailSlice.js';
 
 // 평일:1, 토요일:2, 휴일/일요일:3 로 바꾸기
 function dayCode() {
@@ -30,43 +14,144 @@ function dayCode() {
   return 1;               // 평일
 }
 
-
-
 /* ====================== 컴포넌트 ====================== */
 function SubwayStationDetail() {
-  const { stationId } = useParams();
+  const { stationId, stationLine, stationNm } = useParams();
   const dispatch = useDispatch();
 
-  const subwayList  = useSelector(state => state.subwayStation.subwayList);
-  const subwayInfo  = useSelector(state => state.subwayStationDetail.subwayInfo);
+  // params
+  const lineNum =stationLine.replace(/^0+/,''); // "01호선" -> "1호선"
+  const day = dayCode();                          // 평일=1, 토=2, 휴일/일=3
+  const stationName = stationNm.endsWith("역") ? stationNm.slice(0, -1) : stationNm;
+
   const realtimeArrivalList = useSelector(state => state.subwayStationDetail.realtimeArrivalList);
-  const firstLastTimes   = useSelector(state => state.subwayStationDetail.firstLastTimes);
+  const upFirstLastTimesList = useSelector(state => state.subwayStationDetail.upFirstLastTimesList);
+  const downFirstLastTimesList = useSelector(state => state.subwayStationDetail.downFirstLastTimesList);
 
+  // ------- Unmount 처리 -------
   useEffect(() => {
-    // 역리스트 없으면 호출하기
-    if (!subwayList?.length) {
-      dispatch(subwayStationIndex());
-    }
-
-    // 세그먼트 파라미터(전철역코드)랑 일치하는 역정보 스테이트에 저장 
-    const item = subwayList?.find((item) => stationId === item.STATION_CD);
-    dispatch(setSubwayInfo(item));
-
     // 도착 정보 획득 할때 현재 호선을 아규먼트로 전달
-    dispatch(realtimeArrivalsIndex(subwayInfo?.STATION_NM));
-    console.log(realtimeArrivalList);
-
-
-
-    const lineNum = subwayInfo?.LINE_NUM.replace(/^0+/,''); // "01호선" -> "1호선"
-    const day = dayCode();                          // 평일=1, 토=2, 휴일/일=3
-    const stationCd = subwayInfo.STATION_CD;  // 전철역 코드
+    dispatch(realtimeArrivalsIndex(stationName));
 
     // 첫차,막차 정보 획득
-    dispatch(firstLastTimesIndex(subwayInfo?.LINE_NUM, '상/하행', '요일', subwayInfo?.STATION_CD));
-    console.log(firstLastTimes);
+    dispatch(upFirstLastTimesIndex({lineNum, day, stationId}));
+    dispatch(downFirstLastTimesIndex({lineNum, day, stationId}));
 
-  }, [subwayList?.length]);
+    return () => {
+      dispatch(clearState());
+    }
+  }, []);
+
+  // ------- 도착 정보 처리 -------
+  const [upTrainLineName, setUpTrainLineName] = useState('');
+  const [downTrainLineName, setDownTrainLineName] = useState('');
+  const [upArrivalInfo, setUpArrivalInfo] = useState([]);
+  const [downArrivalInfo, setDownArrivalInfo] = useState([]);
+
+  useEffect(() => {
+    let tmpUpTrainLineName = '';
+    let tmpDownTrainLineName = '';
+    const tmpUpArrivalInfo = [];
+    const tmpDownArrivalInfo = [];
+    const line = `100${lineNum.replace('호선', '')}`;
+
+    for (const item of realtimeArrivalList) {
+      console.log(lineNum, line, item.subwayId);
+      if(line !== item.subwayId) {
+        continue;
+      }
+
+      if(item.updnLine === '상행' || item.updnLine === '외선') {
+        tmpUpArrivalInfo.push(item);
+
+        if(!tmpUpTrainLineName) {
+          tmpUpTrainLineName = formatTrainLineNm(item.trainLineNm, 1);
+        }
+      } else {
+        tmpDownArrivalInfo.push(item);
+
+        if(!tmpDownTrainLineName) {
+          tmpDownTrainLineName = formatTrainLineNm(item.trainLineNm, 1);
+        }
+      }
+    }
+
+    setUpTrainLineName(tmpUpTrainLineName);
+    setDownTrainLineName(tmpDownTrainLineName);
+    setUpArrivalInfo(tmpUpArrivalInfo);
+    setDownArrivalInfo(tmpDownArrivalInfo);
+  }, [realtimeArrivalList]);
+
+  useEffect(() => {
+    const upIntervalId = setInterval(() => {
+      setUpArrivalInfo(formatObjectIntervalArrivalTime(upArrivalInfo));
+    }, 1000);
+    const downIntervalId = setInterval(() => {
+      setDownArrivalInfo(formatObjectIntervalArrivalTime(downArrivalInfo));
+    }, 1000);
+
+    return () => {
+      clearInterval(upIntervalId);
+      clearInterval(downIntervalId);
+    }
+  }, [upArrivalInfo, downArrivalInfo]);
+
+  function formatObjectIntervalArrivalTime(arrivalInfo) {
+    if (arrivalInfo.length > 0) {
+      const copyArrivalInfo = JSON.parse(JSON.stringify(arrivalInfo));
+      for (const item of copyArrivalInfo) {
+        const tmpParse = parseInt(item.barvlDt);
+        if(!tmpParse || tmpParse === 0) {
+          item.barvlDt = '0';
+          continue;
+        }
+  
+        const parsebarvlDt = parseInt(item.barvlDt) - 1;
+        item.barvlDt = parsebarvlDt.toString();
+      }
+
+      return copyArrivalInfo;
+    }
+
+    return arrivalInfo;
+  }
+
+  function formatTrainLineNm(trainLineNm, idx) {
+    const str = (trainLineNm.split('-')[idx]).trim();
+    let endStr = '';
+
+    if(idx === 0) {
+      endStr = '행';
+    } else {
+      endStr = '방면';
+    }
+
+    return str.endsWith(endStr) ? str : `${str}${endStr}`;
+  }
+
+  function formatArrivalString(barvlDt) {
+    let formatStr = '-';
+    
+    if(!barvlDt) {
+      return formatStr;
+    }
+
+    const parseBarvlDt = parseInt(barvlDt);
+
+    if(parseBarvlDt > 0) {
+      const minute = Math.floor(parseBarvlDt / 60).toString();
+      const second = (parseBarvlDt % 60).toString();
+      formatStr = `${minute.padStart(2, '0')}:${second.padStart(2, '0')} 후 도착`;
+    } else {
+      formatStr = '도착';
+    }
+
+    return `${formatStr}`;
+  }
+  
+  function formatHHmmsstoHHss(time) {
+    return time ? `${time.substring(0,2)}:${time.substring(2, 4)}` : '-';
+  }
 
   return (
     <div className="subway-station-detail-scope">
@@ -74,35 +159,49 @@ function SubwayStationDetail() {
         <div className="detail-root">
           <div className="detail-switch">
             <div className="detail-switch-center">
-              {subwayInfo?.LINE_NUM && (
+              {lineNum && (
                 <span className="detail-switch-linebadge">
-                  {`${subwayInfo?.LINE_NUM.replace(/^0+/,'')}`}
+                  {lineNum}
                 </span>
               )}
               <span className="detail-switch-current">
-                {subwayInfo?.STATION_NM || '역 이름 불러오는 중…'}
+                { stationNm || '역 이름 불러오는 중…' }
               </span>
             </div>
           </div>
 
           <div className="detail-two-col">
             <section className="detail-section">
-              <div>-방면</div>
+              <div>{upTrainLineName}</div>
               <div className="detail-card">
-                <div>-행 -후 도착</div>
-                <div>-행 -후 도착</div>
-                <div className="detail-row"><h4>첫차</h4><p>몇시 몇분</p></div>
-                <div className="detail-row"><h4>막차</h4><p>몇시 몇분</p></div>
+                {
+                  upArrivalInfo.length > 0 && upArrivalInfo.map(item => {
+                    return (
+                      <>
+                        <div key={`${item.statnId}${item.barvlDt}`}>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
+                      </>
+                    )
+                  })
+                }
+                <div className="detail-row"><h4>첫차</h4><p>{formatHHmmsstoHHss(upFirstLastTimesList[0]?.FSTT_HRM)}</p></div>
+                <div className="detail-row"><h4>막차</h4><p>{formatHHmmsstoHHss(upFirstLastTimesList[0]?.LSTTM_HRM)}</p></div>
               </div>
             </section>
 
             <section className="detail-section">
-              <div>-방면</div>
+              <div>{downTrainLineName}</div>
               <div className="detail-card">
-                <div>-행 -후 도착</div>
-                <div>-행 -후 도착</div>
-                <div className="detail-row"><h4>첫차</h4><p>몇시 몇분</p></div>
-                <div className="detail-row"><h4>막차</h4><p>몇시 몇분</p></div>
+                {
+                  downArrivalInfo.length > 0 && downArrivalInfo.map(item => {
+                    return (
+                      <>
+                        <div key={`${item.statnId}${item.barvlDt}`}>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
+                      </>
+                    )
+                  })
+                }
+                <div className="detail-row"><h4>첫차</h4><p>{formatHHmmsstoHHss(downFirstLastTimesList[0]?.FSTT_HRM)}</p></div>
+                <div className="detail-row"><h4>막차</h4><p>{formatHHmmsstoHHss(downFirstLastTimesList[0]?.LSTTM_HRM)}</p></div>
               </div>
             </section>
           </div>
