@@ -55,25 +55,38 @@ function SubwayStationDetail() {
     const tmpDownArrivalInfo = [];
     const line = `100${lineNum.replace('호선', '')}`;
 
+    let upCount = 0;
+    let downCount = 0;
+
     for (const item of realtimeArrivalList) {
-      console.log(lineNum, line, item.subwayId);
+      // console.log(lineNum, line, item.subwayId);
       if(line !== item.subwayId) {
         continue;
       }
 
+      // 상행/내선: 최대 2개만
       if(item.updnLine === '상행' || item.updnLine === '내선') {
-        tmpUpArrivalInfo.push(item);
-
-        if(!tmpUpTrainLineName) {
-          tmpUpTrainLineName = formatTrainLineNm(item.trainLineNm, 1);
+        if (upCount < 2) {
+          tmpUpArrivalInfo.push(item);
+          upCount++;
+          if(!tmpUpTrainLineName) {
+            tmpUpTrainLineName = formatTrainLineNm(item.trainLineNm, 1);
+          }
         }
-      } else {
-        tmpDownArrivalInfo.push(item);
-
-        if(!tmpDownTrainLineName) {
-          tmpDownTrainLineName = formatTrainLineNm(item.trainLineNm, 1);
+      } 
+      // 하행/외선: 최대 2개만
+      else {
+        if (downCount < 2) {
+          tmpDownArrivalInfo.push(item);
+          downCount++;
+          if (!tmpDownTrainLineName) {
+            tmpDownTrainLineName = formatTrainLineNm(item.trainLineNm, 1);
+          }
         }
       }
+
+      // 두 방향 모두 2개씩 모이면 종료
+      if (upCount >= 2 && downCount >= 2) break;
     }
 
     setUpTrainLineName(tmpUpTrainLineName);
@@ -146,11 +159,11 @@ function SubwayStationDetail() {
       formatStr = '도착';
     }
 
-    return `${formatStr}`;
+    return formatStr;
   }
   
   function formatHHmmsstoHHss(time) {
-    return time ? `${time.substring(0,2)}:${time.substring(2, 4)}` : '-';
+    return time ? `${time.substring(0, 2)}:${time.substring(2, 4)}` : '-';
   }
 
   return (
@@ -172,13 +185,18 @@ function SubwayStationDetail() {
 
           <div className="detail-two-col">
             <section className="detail-section">
-              <div>{upTrainLineName}</div>
+              {/* 방면표시 */}
+              <div className='direction-label'>{upTrainLineName}</div> 
               <div className="detail-card">
                 {
                   upArrivalInfo.length > 0 && upArrivalInfo.map(item => {
                     return (
                       <div key={item.ordkey}>
-                        <div>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
+                        <div>
+                          {`${formatTrainLineNm(item.trainLineNm, 0)}`}
+                            <span className='detail-updn'>{`(${item.updnLine})`}</span>
+                          {` ${formatArrivalString(item.barvlDt)}`}
+                        </div>
                       </div>
                     )
                   })
@@ -189,13 +207,18 @@ function SubwayStationDetail() {
             </section>
 
             <section className="detail-section">
-              <div>{downTrainLineName}</div>
+              {/* 방면표시 */}
+              <div className='direction-label'>{downTrainLineName}</div>
               <div className="detail-card">
                 {
                   downArrivalInfo.length > 0 && downArrivalInfo.map(item => {
                     return (
                       <div key={item.ordkey}>
-                        <div>{`${formatTrainLineNm(item.trainLineNm, 0)} ${formatArrivalString(item.barvlDt)}`}</div>
+                        <div>
+                          {`${formatTrainLineNm(item.trainLineNm, 0)}`}
+                            <span className='detail-updn'>{`(${item.updnLine})`}</span>
+                          {` ${formatArrivalString(item.barvlDt)}`}
+                        </div>
                       </div>
                     )
                   })

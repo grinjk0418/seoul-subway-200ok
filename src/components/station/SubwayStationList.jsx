@@ -29,7 +29,7 @@ let filteredList = [];
         <h1>지하철역 리스트</h1>
       </div>
       <div className="subway-station-list__searchbar">
-        <input type='text' value={search} onChange={onChange}/>
+        <input type='text' value={search} onChange={onChange} placeholder="지하철역을 검색해주세요."/>
       </div>
       <div className="subway-station-list">
         {

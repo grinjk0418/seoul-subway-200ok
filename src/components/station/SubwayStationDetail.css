@@ -1,4 +1,4 @@
-/* src/pages/SubwayStationDetail.css */
+/* src/pages/SubwayStationDetail.css (정리본) */
 /* ✅ 이 스코프 안에서만 스타일 적용 */
 .subway-station-detail-scope .detail-stage{
   min-height: 100vh;
@@ -94,37 +94,6 @@
   background: rgba(255,255,255,0.06);
 }
 
-/* 방면 라벨(칩) */
-.subway-station-detail-scope .chip-row{
-  display: flex;
-  margin: 0;
-  padding: 0;
-}
-.subway-station-detail-scope .chip-row-left{  justify-content: flex-start; }
-.subway-station-detail-scope .chip-row-right{ justify-content: flex-end;   }
-
-.subway-station-detail-scope .chip{
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: #54DCC1;
-  color: #0d1b1e;
-  font-size: 18px;
-  font-weight: 800;
-  line-height: 1.1;
-  white-space: nowrap;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-.subway-station-detail-scope .chip-text{
-  display: inline-block;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 /* 섹션 내부 카드 본문 */
 .subway-station-detail-scope .detail-card{
   display: grid;
@@ -149,8 +118,22 @@
 .subway-station-detail-scope .detail-row h4{ margin: 0; font-size: 1em; font-weight: 800; }
 .subway-station-detail-scope .detail-row p{  margin: 0; font-size: 1em; }
 
-/* ETA 강조 */
-.subway-station-detail-scope .detail-eta{
-  color: #ffd166;
+/* 방향 배지(간단 회색) */
+.detail-updn {
+  color: #afafaf;
+}
+
+.direction-label {
+  display: inline-flex;
+  justify-self: start;     /* 그리드에서 가로로 늘어지지 않게 */
+  align-self: start;       /* 세로도 시작 지점에 붙이기(옵션) */
+  width: max-content;      /* 글자수만큼만 너비 */
+  padding: .35em .8em;
+  border-radius: 9999px;
+  background: #54DCC1;     /* 민트 */
+  color: #0d1b1e;
   font-weight: 800;
+  font-size: inherit;      /* 부모 글자 크기 따라감 */
+  line-height: 1.1;
+  white-space: nowrap;
 }
